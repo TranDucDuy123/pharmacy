@@ -42,6 +42,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'customer' => [
+            'driver' => 'session',
+            'provider' => 'customers',
+        ],
     ],
 
     /*
@@ -78,6 +83,12 @@ return [
             'driver' => 'eloquent',
             // SỬA DÒNG NÀY:
             'model' => App\Models\NhanVien::class, 
+        ],
+
+        // THÊM PROVIDER CHO KHÁCH HÀNG VÀO ĐÂY
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\KhachHang::class,
         ],
     ],
 

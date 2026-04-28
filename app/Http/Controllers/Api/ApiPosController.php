@@ -229,4 +229,32 @@ class ApiPosController extends Controller
 
         return view('admin.orders.index', compact('danhSachHoaDon'));
     }
+
+    public function createCustomer(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'so_dien_thoai'  => 'required|unique:khach_hang,so_dien_thoai|max:20',
+            'ten_khach_hang' => 'required|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
+        }
+
+        $lastKh = \App\Models\KhachHang::orderBy('id', 'desc')->first();
+        $nextId = $lastKh ? $lastKh->id + 1 : 1;
+        
+        $khachHang = \App\Models\KhachHang::create([
+            'ma_khach_hang'  => 'KH' . str_pad($nextId, 4, '0', STR_PAD_LEFT),
+            'so_dien_thoai'  => $request->so_dien_thoai,
+            'ten_khach_hang' => $request->ten_khach_hang,
+            // Cấp mật khẩu mặc định chính là Số điện thoại của khách
+            'password'       => \Illuminate\Support\Facades\Hash::make($request->so_dien_thoai),
+            'diem_tich_luy'  => 0,
+            'trang_thai'     => 1, // Kích hoạt hoạt động NGAY LẬP TỨC
+        ]);
+
+        return response()->json(['status' => 'success', 'data' => $khachHang]);
+    }
+
 }

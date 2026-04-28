@@ -138,7 +138,7 @@
                     </div>
 
                     <!-- Bảng lọc nâng cao (Alpine.js) -->
-                    <div x-show="openFilter" x-cloak x-transition class="p-4 mt-2 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 shadow-inner">
+                    <div x-show="openFilter" x-cloak x-transition class="p-1 mt-2 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 shadow-inner">
                         <div>
                             <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Khoảng giá (VNĐ)</label>
                             <div class="flex items-center gap-2">
@@ -161,8 +161,8 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="flex items-end gap-2">
-                            <button type="submit" class="flex-1 py-2 bg-blue-600 text-white rounded-lg font-black text-xs hover:bg-blue-700">ÁP DỤNG LỌC</button>
+                        <div class="flex items-end gap-2 h-full justify-end">
+                            <button type="submit" class="  shadow-md p-2 py-2 bg-blue-600 text-white font-black text-xs hover:bg-blue-700 border rounded-lg">ÁP DỤNG LỌC</button>
                             <a href="{{ route('pos.index') }}" class="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg font-bold text-xs decoration-none">XÓA</a>
                         </div>
                     </div>
@@ -232,6 +232,14 @@
             </div>
         </section>
 
+        <div class="p-2 border-b border-slate-100 bg-slate-50/50">
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Khách Hàng</h2>
+        <button x-show="!selectedCustomer" @click="showModal = true" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition">+ Thêm mới</button>
+    </div>
+
+    
+
         <!-- ASIDE GIỎ HÀNG -->
         <aside class="bg-white flex flex-col shrink-0 relative z-20 shadow-2xl">
             <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -291,6 +299,8 @@
                         <span class="font-black text-3xl text-blue-600 tracking-tighter" x-text="formatPrice(totalAmount)"></span>
                     </div>
                 </div>
+
+                
 
                 <div class="grid grid-cols-2 gap-3">
                     <button @click="clearCart()" class="py-3 bg-white border border-slate-200 text-slate-400 font-bold rounded-2xl hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition">HỦY</button>

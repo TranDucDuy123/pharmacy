@@ -16,12 +16,25 @@ use App\Http\Controllers\KhachHangController;
 use App\Http\Controllers\NhaCungCapController;
 use App\Http\Controllers\PhieuNhapController;
 
+use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\CustomerAuthController;
+
 // ==========================================
 // PHẦN 2: CÁC ROUTE CÔNG KHAI (Không cần đăng nhập)
 // ==========================================
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+// Giao diện cửa hàng khách hàng (Đã đổi tên thành storefront.home cho khớp với View)
+Route::get('/', [StorefrontController::class, 'index'])->name('storefront.home');
+
+// Auth Khách Hàng
+Route::get('/khach-hang/login', [CustomerAuthController::class, 'showLogin'])->name('customer.login');
+Route::post('/khach-hang/login', [CustomerAuthController::class, 'login'])->name('customer.login.post');
+Route::get('/khach-hang/register', [CustomerAuthController::class, 'showRegister'])->name('customer.register');
+Route::post('/khach-hang/register', [CustomerAuthController::class, 'register'])->name('customer.register.post');
+Route::post('/khach-hang/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
 // Hiển thị form đăng nhập & Xử lý đăng nhập
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
