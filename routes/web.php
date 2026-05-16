@@ -95,3 +95,8 @@ Route::middleware(['auth', CheckAdmin::class])->prefix('api/v1/admin')->group(fu
     // API Lấy danh sách đơn hàng
     Route::get('/orders', [ApiPosController::class, 'index']);
 });
+
+// Bắt buộc khách hàng phải đăng nhập mới được gọi API này
+Route::middleware(['auth:customer'])->group(function () {
+    Route::post('/storefront/checkout', [StorefrontController::class, 'checkout'])->name('storefront.checkout');
+});

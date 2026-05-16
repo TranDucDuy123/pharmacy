@@ -232,13 +232,93 @@
             </div>
         </section>
 
-        <div class="p-2 border-b border-slate-100 bg-slate-50/50">
-    <div class="flex items-center justify-between mb-3">
-        <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Khách Hàng</h2>
-        <button x-show="!selectedCustomer" @click="showModal = true" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition">+ Thêm mới</button>
-    </div>
 
+        <!-- KHU VỰC KHÁCH HÀNG (COMBO BOX) -->
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50 relative z-40">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Khách Hàng</h2>
+                <!-- Nút Thêm mới gọi hàm openCustomerModal() để tự động điền SĐT đang gõ dở -->
+                <button x-show="!selectedCustomer" @click="openCustomerModal()" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition shadow-sm">+ Thêm mới</button>
+            </div>
+
+            <!-- Trạng thái 1: Đã chọn khách hàng -->
+            <div x-show="selectedCustomer" x-cloak class="bg-white border border-blue-200 rounded-xl p-3 flex items-start justify-between shadow-sm">
+                <div>
+                    <p class="font-bold text-slate-800 text-sm" x-text="selectedCustomer?.ten_khach_hang"></p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <p class="text-[11px] text-slate-500 font-medium" x-text="selectedCustomer?.so_dien_thoai"></p>
+                        <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded" x-text="(selectedCustomer?.diem_tich_luy || 0) + ' điểm'"></span>
+                    </div>
+                </div>
+                <button @click="clearCustomer()" class="text-slate-400 hover:text-red-500 p-1.5 bg-slate-50 rounded-md transition" title="Bỏ chọn">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Trạng thái 2: Ô tìm kiếm Combo box -->
+            <div x-show="!selectedCustomer" class="relative" @click.away="customerSearchResults = []">
+                <div class="relative">
+                    <input type="text" x-model="customerSearch" @input.debounce.300ms="searchCustomer()" @focus="customerSearch.length >= 2 ? searchCustomer() : null" placeholder="Nhập SĐT hoặc Tên..." 
+                        class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition placeholder:text-slate-400 text-slate-800 font-medium">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    
+                    <!-- Spinner Loading -->
+                    <svg x-show="isSearchingCustomer" class="animate-spin w-4 h-4 text-blue-500 absolute right-3 top-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
+                
+                <!-- Dropdown Kết quả -->
+                <div x-show="customerSearchResults.length > 0" x-cloak class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50 max-h-60 overflow-y-auto">
+                    <template x-for="cust in customerSearchResults" :key="cust.id">
+                        <div @click="selectCustomer(cust)" class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 transition group">
+                            <p class="font-bold text-slate-800 text-sm group-hover:text-blue-700" x-text="cust.ten_khach_hang"></p>
+                            <div class="flex justify-between items-center mt-1">
+                                <p class="text-[11px] text-slate-500 font-medium" x-text="cust.so_dien_thoai"></p>
+                                <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded" x-text="cust.diem_tich_luy + ' điểm'"></span>
+                            </div>
+                        </div>
+                    </template>
+                    <!-- Nếu gõ mà không có kết quả -->
+                    <div @click="openCustomerModal()" class="px-4 py-3 bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs font-bold text-blue-600 flex items-center justify-center gap-2 border-t border-slate-100 transition">
+                        + Thêm khách hàng mới
+                    </div>
+                </div>
+            </div>
+        </div>
     
+        <!-- MODAL TẠO KHÁCH HÀNG MỚI -->
+        <div x-show="showModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity">
+            <div @click.away="showModal = false" class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl transform transition-all"
+                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
+                
+                <h3 class="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg></div>
+                    Thêm Khách Hàng
+                </h3>
+                
+                <p class="text-[11px] text-amber-600 bg-amber-50 p-2.5 rounded-lg mb-5 font-medium border border-amber-100">
+                    Tài khoản sẽ được kích hoạt ngay. Mật khẩu web mặc định là Số điện thoại.
+                </p>
+                
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Tên khách hàng <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="newCustomer.ten_khach_hang" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 placeholder:font-normal text-slate-800" placeholder="VD: Nguyễn Văn A">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Số điện thoại <span class="text-red-500">*</span></label>
+                        <input type="tel" x-model="newCustomer.so_dien_thoai" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 placeholder:font-normal text-slate-800" placeholder="VD: 0901234567">
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button @click="showModal = false" class="flex-1 py-3.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition shadow-sm">Hủy</button>
+                    <button @click="submitNewCustomer()" :disabled="isCreatingCustomer" class="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition flex justify-center items-center gap-2 disabled:opacity-50">
+                        <span x-show="!isCreatingCustomer">Lưu & Chọn</span>
+                        <span x-show="isCreatingCustomer" x-cloak class="animate-pulse">Đang lưu...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- ASIDE GIỎ HÀNG -->
         <aside class="bg-white flex flex-col shrink-0 relative z-20 shadow-2xl">

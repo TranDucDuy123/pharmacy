@@ -62,21 +62,121 @@ class ApiPosController extends Controller
      * Xử lý thanh toán đơn hàng (Database Transaction)
      * Đảm bảo trừ kho và lưu hóa đơn diễn ra đồng thời
      */
-    public function checkout(Request $request)
+
+    // checkout cũ 
+    // public function checkout(Request $request)
+    // {
+    //     // 1. Kiểm tra tính hợp lệ của dữ liệu giỏ hàng gửi lên
+    //     $validator = Validator::make($request->all(), [
+    //         'cart'             => 'required|array|min:1',
+    //         'cart.*.id'        => 'required|integer|exists:thuoc,id', // Thêm integer
+    //         'cart.*.quantity'  => 'required|integer|min:1',
+    //         'cart.*.price'     => 'required|numeric|min:0',
+    //         'total_amount'     => 'required|numeric|min:0',
+    //         'customer_id'      => 'nullable|integer', // Validate thêm customer_id nếu có
+    //     ], [
+    //         // Custom messages cho dễ hiểu
+    //         'cart.required' => 'Giỏ hàng không được để trống.',
+    //         'cart.*.id.exists' => 'Một hoặc nhiều loại thuốc không tồn tại trong hệ thống.',
+    //         'total_amount.required' => 'Tổng tiền không hợp lệ.'
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Dữ liệu không hợp lệ.',
+    //             'errors' => $validator->errors()
+    //         ], 422);
+    //     }
+
+    //     // 2. Bắt đầu Transaction (Đảm bảo an toàn dữ liệu)
+    //     DB::beginTransaction();
+
+    //     try {
+    //         // Lấy ID nhân viên đang thao tác
+    //         $nhanVienId = auth()->check() ? auth()->id() : 1; 
+
+    //         // Tính toán lại tổng tiền từ server để tránh việc user sửa data trên trình duyệt
+    //         $serverTotalAmount = 0;
+
+    //         // Bước 2.1: Tạo Hóa đơn gốc (Order)
+    //         $order = Order::create([
+    //             'customer_id' => $request->customer_id ?? null,
+    //             'user_id'     => $nhanVienId,
+    //             'total_price' => 0, // Tạm để 0, sẽ update sau khi tính toán xong chi tiết
+    //             'status'      => 'completed',
+    //             'note'        => 'Khách mua trực tiếp tại quầy (POS)'
+    //         ]);
+
+    //         // Bước 2.2: Lặp qua từng món trong giỏ hàng để lưu chi tiết và trừ kho
+    //         foreach ($request->cart as $item) {
+    //             // Dùng lockForUpdate() để khóa dòng này lại, tránh Race Condition
+    //             $thuoc = Thuoc::lockForUpdate()->find($item['id']);
+
+    //             if (!$thuoc) {
+    //                  throw new \Exception("Thuốc có ID {$item['id']} không tồn tại hoặc đã bị xóa.");
+    //             }
+
+    //             // Kiểm tra trạng thái thuốc
+    //             if ($thuoc->trang_thai == 0) {
+    //                 throw new \Exception("Sản phẩm [{$thuoc->ten_thuoc}] đã ngừng kinh doanh.");
+    //             }
+
+    //             // Kiểm tra tồn kho
+    //             if ($thuoc->so_luong_ton < $item['quantity']) {
+    //                 throw new \Exception("Sản phẩm [{$thuoc->ten_thuoc}] chỉ còn {$thuoc->so_luong_ton} trong kho.");
+    //             }
+
+    //             $thanhTienItem = $item['quantity'] * $item['price'];
+    //             $serverTotalAmount += $thanhTienItem;
+
+    //             // Lưu chi tiết hóa đơn
+    //             OrderItem::create([
+    //                 'order_id' => $order->id,
+    //                 'thuoc_id' => $thuoc->id,
+    //                 'quantity' => $item['quantity'],
+    //                 'price'    => $item['price'] 
+    //             ]);
+
+    //             // Trừ số lượng tồn kho
+    //             $thuoc->decrement('so_luong_ton', $item['quantity']);
+    //         }
+
+    //         // Cập nhật lại tổng tiền chính xác
+    //         $order->update(['total_price' => $serverTotalAmount]);
+
+    //         // 3. Nếu mọi thứ suôn sẻ -> Lưu toàn bộ vào Database
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'status'   => 'success',
+    //             'message'  => 'Thanh toán thành công!',
+    //             'order_id' => str_pad($order->id, 4, '0', STR_PAD_LEFT)
+    //         ], 200);
+
+    //     } catch (\Exception $e) {
+    //         // 4. Rollback và ghi Log nếu có lỗi
+    //         DB::rollBack();
+    //         Log::error('Lỗi thanh toán POS: ' . $e->getMessage(), ['cart' => $request->cart]);
+            
+    //         return response()->json([
+    //             'status'  => 'error',
+    //             'message' => $e->getMessage()
+    //         ], 400); // Bad Request cho các lỗi logic nghiệp vụ
+    //     }
+    // }
+    // checkout mới
+   public function checkout(Request $request)
     {
-        // 1. Kiểm tra tính hợp lệ của dữ liệu giỏ hàng gửi lên
+        // 1. Kiểm tra tính hợp lệ của dữ liệu gửi lên
         $validator = Validator::make($request->all(), [
             'cart'             => 'required|array|min:1',
-            'cart.*.id'        => 'required|integer|exists:thuoc,id', // Thêm integer
+            'cart.*.id'        => 'required|integer|exists:thuoc,id',
             'cart.*.quantity'  => 'required|integer|min:1',
             'cart.*.price'     => 'required|numeric|min:0',
             'total_amount'     => 'required|numeric|min:0',
-            'customer_id'      => 'nullable|integer', // Validate thêm customer_id nếu có
-        ], [
-            // Custom messages cho dễ hiểu
-            'cart.required' => 'Giỏ hàng không được để trống.',
-            'cart.*.id.exists' => 'Một hoặc nhiều loại thuốc không tồn tại trong hệ thống.',
-            'total_amount.required' => 'Tổng tiền không hợp lệ.'
+            'customer_id'      => 'nullable|integer|exists:khach_hang,id',
+            'note'             => 'nullable|string|max:500' // Ghi chú do người dùng/nhân viên tự nhập thêm
         ]);
 
         if ($validator->fails()) {
@@ -87,40 +187,64 @@ class ApiPosController extends Controller
             ], 422);
         }
 
-        // 2. Bắt đầu Transaction (Đảm bảo an toàn dữ liệu)
+        // 2. PHÂN LUỒNG XỬ LÝ (WEB vs POS)
+        $isCustomer = auth('customer')->check();
+        $isStaff = auth()->check();
+
+        if (!$isCustomer && !$isStaff) {
+            return response()->json(['status' => 'error', 'message' => 'Vui lòng đăng nhập để thao tác.'], 401);
+        }
+
+        $khachHangId = null;
+        $nhanVienId = null;
+        $status = 'pending';
+        $baseNote = '';
+
+        if ($isCustomer) {
+            // NẾU LÀ KHÁCH HÀNG MUA TRÊN WEB
+            $khachHangId = auth('customer')->id(); // Bắt buộc lấy ID từ phiên đăng nhập (bảo mật)
+            $nhanVienId  = null;                   // Để null vì khách tự đặt
+            $status      = 'pending';              // Chờ nhân viên duyệt
+            $baseNote    = '[WEB] Đơn hàng đặt từ Website.';
+        } else {
+            // NẾU LÀ NHÂN VIÊN TẠO ĐƠN TRÊN POS
+            $khachHangId = $request->customer_id ?? null; // Lấy từ Smart Combo Box (có thể null nếu khách vãng lai)
+            $nhanVienId  = auth()->id();                  // ID nhân viên đang trực POS
+            $status      = 'completed';                   // Đơn tại quầy là xong luôn
+            $baseNote    = '[POS] Khách mua trực tiếp tại quầy.';
+        }
+
+        // Nối thêm ghi chú nếu frontend có gửi lên
+        $finalNote = $request->filled('note') 
+            ? $baseNote . ' Ghi chú: ' . trim($request->note) 
+            : $baseNote;
+
+        // 3. TRANSACTION: LƯU ĐƠN & TRỪ KHO
         DB::beginTransaction();
 
         try {
-            // Lấy ID nhân viên đang thao tác
-            $nhanVienId = auth()->check() ? auth()->id() : 1; 
-
-            // Tính toán lại tổng tiền từ server để tránh việc user sửa data trên trình duyệt
             $serverTotalAmount = 0;
 
-            // Bước 2.1: Tạo Hóa đơn gốc (Order)
+            // 3.1 Tạo Hóa đơn gốc
             $order = Order::create([
-                'customer_id' => $request->customer_id ?? null,
-                'user_id'     => $nhanVienId,
-                'total_price' => 0, // Tạm để 0, sẽ update sau khi tính toán xong chi tiết
-                'status'      => 'completed',
-                'note'        => 'Khách mua trực tiếp tại quầy (POS)'
+                'khach_hang_id' => $khachHangId,
+                'user_id'       => $nhanVienId,
+                'total_price'   => 0, // Tạm để 0
+                'status'        => $status,
+                'note'          => $finalNote
             ]);
 
-            // Bước 2.2: Lặp qua từng món trong giỏ hàng để lưu chi tiết và trừ kho
+            // 3.2 Lặp qua giỏ hàng
             foreach ($request->cart as $item) {
-                // Dùng lockForUpdate() để khóa dòng này lại, tránh Race Condition
+                // Khóa dòng thuốc này lại để tránh bán lố khi nhiều người mua cùng lúc
                 $thuoc = Thuoc::lockForUpdate()->find($item['id']);
 
-                if (!$thuoc) {
-                     throw new \Exception("Thuốc có ID {$item['id']} không tồn tại hoặc đã bị xóa.");
+                if (!$thuoc || $thuoc->trang_thai == 0) {
+                    // SỬA LỖI TẠI ĐÂY: Đưa phép toán ?? ra ngoài chuỗi
+                    $tenSP = $item['name'] ?? $item['id'];
+                    throw new \Exception("Sản phẩm [{$tenSP}] không khả dụng.");
                 }
 
-                // Kiểm tra trạng thái thuốc
-                if ($thuoc->trang_thai == 0) {
-                    throw new \Exception("Sản phẩm [{$thuoc->ten_thuoc}] đã ngừng kinh doanh.");
-                }
-
-                // Kiểm tra tồn kho
                 if ($thuoc->so_luong_ton < $item['quantity']) {
                     throw new \Exception("Sản phẩm [{$thuoc->ten_thuoc}] chỉ còn {$thuoc->so_luong_ton} trong kho.");
                 }
@@ -128,7 +252,7 @@ class ApiPosController extends Controller
                 $thanhTienItem = $item['quantity'] * $item['price'];
                 $serverTotalAmount += $thanhTienItem;
 
-                // Lưu chi tiết hóa đơn
+                // Lưu chi tiết
                 OrderItem::create([
                     'order_id' => $order->id,
                     'thuoc_id' => $thuoc->id,
@@ -136,34 +260,37 @@ class ApiPosController extends Controller
                     'price'    => $item['price'] 
                 ]);
 
-                // Trừ số lượng tồn kho
+                // Trừ kho
                 $thuoc->decrement('so_luong_ton', $item['quantity']);
             }
 
-            // Cập nhật lại tổng tiền chính xác
+            // 3.3 Cập nhật tổng tiền
             $order->update(['total_price' => $serverTotalAmount]);
 
-            // 3. Nếu mọi thứ suôn sẻ -> Lưu toàn bộ vào Database
+            // 3.4 Tích điểm cho Khách hàng (Nếu có khách hàng)
+            if ($khachHangId) {
+                $diemCong = floor($serverTotalAmount / 1000); // Công thức: 1.000 VNĐ = 1 Điểm
+                \App\Models\KhachHang::where('id', $khachHangId)->increment('diem_tich_luy', $diemCong);
+            }
+
             DB::commit();
 
             return response()->json([
                 'status'   => 'success',
-                'message'  => 'Thanh toán thành công!',
+                'message'  => $isCustomer ? 'Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.' : 'Thanh toán hoàn tất!',
                 'order_id' => str_pad($order->id, 4, '0', STR_PAD_LEFT)
             ], 200);
 
         } catch (\Exception $e) {
-            // 4. Rollback và ghi Log nếu có lỗi
             DB::rollBack();
-            Log::error('Lỗi thanh toán POS: ' . $e->getMessage(), ['cart' => $request->cart]);
+            Log::error('Lỗi Checkout: ' . $e->getMessage(), ['payload' => $request->all()]);
             
             return response()->json([
                 'status'  => 'error',
                 'message' => $e->getMessage()
-            ], 400); // Bad Request cho các lỗi logic nghiệp vụ
+            ], 400);
         }
     }
-
     /**
      * Lấy danh sách danh mục động để hiển thị menu tag
      */
@@ -257,4 +384,36 @@ class ApiPosController extends Controller
         return response()->json(['status' => 'success', 'data' => $khachHang]);
     }
 
+    /**
+     * Tìm kiếm khách hàng theo Tên hoặc SĐT (Dùng cho Combo Box POS)
+     */
+    public function searchCustomer(Request $request)
+    {
+        try {
+            $q = trim($request->q);
+            
+            if (!$q) {
+                return response()->json(['status' => 'success', 'data' => []]);
+            }
+
+            // Tìm theo SĐT, Tên hoặc Mã KH (chỉ lấy tài khoản đang hoạt động)
+            $customers = \App\Models\KhachHang::where('trang_thai', 1)
+                ->where(function($query) use ($q) {
+                    $query->where('so_dien_thoai', 'LIKE', "%{$q}%")
+                          ->orWhere('ten_khach_hang', 'LIKE', "%{$q}%")
+                          ->orWhere('ma_khach_hang', 'LIKE', "%{$q}%");
+                })
+                ->take(10) // Lấy tối đa 10 người cho nhẹ máy
+                ->get(['id', 'ma_khach_hang', 'ten_khach_hang', 'so_dien_thoai', 'diem_tich_luy']);
+
+            return response()->json([
+                'status' => 'success', 
+                'data' => $customers
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Lỗi API searchCustomer: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'data' => []], 500);
+        }
+    }
 }

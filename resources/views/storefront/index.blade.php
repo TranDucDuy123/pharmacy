@@ -61,7 +61,7 @@
                             <p class="text-[10px] font-bold text-slate-400 mb-0.5 uppercase">{{ $thuoc->don_vi_co_ban }}</p>
                             <p class="font-black text-blue-600 text-lg leading-none">{{ number_format($thuoc->gia_ban, 0, ',', '.') }}<span class="text-xs align-top">₫</span></p>
                         </div>
-                        <button class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition shadow-sm active:scale-90" title="Thêm vào giỏ">
+                        <button @click="addToCart({{ json_encode(['id' => $thuoc->id, 'name' => $thuoc->ten_thuoc, 'price' => $thuoc->gia_ban, 'stock' => $thuoc->so_luong_ton, 'image' => $thuoc->hinh_anh]) }})" class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition shadow-sm active:scale-90" title="Thêm vào giỏ">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>

@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Thuoc;
-use App\Models\Order; // THÊM DÒNG NÀY ĐỂ GỌI MODEL ORDER
+use App\Models\Order; 
+use App\Models\KhachHang; // BỔ SUNG BẢNG KHÁCH HÀNG
 use Illuminate\Support\Facades\Log;
 
 class PosController extends Controller
@@ -23,23 +24,30 @@ class PosController extends Controller
                 ->distinct()
                 ->pluck('danh_muc');
 
-            // 2. Khởi tạo Query Builder
+            // 2. LẤY DANH SÁCH KHÁCH HÀNG ĐỂ ĐẨY RA GIAO DIỆN
+            $dsKhachHang = KhachHang::where('trang_thai', 1)
+                ->orderBy('id', 'desc')
+                ->get();
+
+            // 3. Khởi tạo Query Builder
             $query = Thuoc::query();
 
             // Mặc định chỉ hiện các thuốc đang kinh doanh (trang_thai = 1)
             $query->where('trang_thai', 1);
 
-            // 3. Xử lý TÌM KIẾM (Search)
+            // 4. Xử lý TÌM KIẾM (Search)
             if ($request->filled('search')) {
                 $search = trim($request->search);
                 $query->where(function($sub) use ($search) {
                     $sub->where('ten_thuoc', 'LIKE', "%{$search}%")
                         ->orWhere('hoat_chat', 'LIKE', "%{$search}%")
-                        ->orWhere('ma_thuoc', 'LIKE', "%{$search}%");
+                        ->orWhere('ma_thuoc', 'LIKE', "%{$search}%")
+                         // SỬA LẠI: TÌM KIẾM THEO DANH MỤC (Vì danh mục được đặt theo tên bệnh lý)
+                        ->orWhere('danh_muc', 'LIKE', "%{$search}%");
                 });
             }
 
-            // 4. Lọc theo DANH MỤC (Category)
+            // 5. Lọc theo DANH MỤC (Category)
             if ($request->filled('category')) {
                 $category = trim($request->category);
                 if ($category !== 'Tất cả' && $category !== '') {
@@ -47,12 +55,12 @@ class PosController extends Controller
                 }
             }
 
-            // 5. Lọc theo QUY CHẾ (Loại thuốc Rx/OTC)
+            // 6. Lọc theo QUY CHẾ (Loại thuốc Rx/OTC)
             if ($request->filled('loai')) {
                 $query->where('loai_thuoc', trim($request->loai));
             }
 
-            // 6. Lọc theo KHOẢNG GIÁ (Price Range)
+            // 7. Lọc theo KHOẢNG GIÁ (Price Range)
             if ($request->filled('min_price')) {
                 $query->where('gia_ban', '>=', $request->min_price);
             }
@@ -60,19 +68,19 @@ class PosController extends Controller
                 $query->where('gia_ban', '<=', $request->max_price);
             }
 
-            // 7. Lọc theo TÌNH TRẠNG KHO (Stock status)
+            // 8. Lọc theo TÌNH TRẠNG KHO (Stock status)
             if ($request->stock === 'sap_het') {
                 $query->where('so_luong_ton', '<=', 10)->where('so_luong_ton', '>', 0);
             }
 
-            // 8. Thực thi truy vấn, sắp xếp và phân trang
+            // 9. Thực thi truy vấn, sắp xếp và phân trang
             // Sử dụng withQueryString() để giữ lại các filter trên link chuyển trang
             $danhSachThuoc = $query->orderBy('ten_thuoc', 'asc')
                                    ->paginate(16)
                                    ->withQueryString();
 
-            // 9. Trả về View cùng dữ liệu
-            return view('pos.index', compact('danhSachThuoc', 'dsDanhMuc'));
+            // 10. Trả về View cùng dữ liệu (Thêm $dsKhachHang)
+            return view('pos.index', compact('danhSachThuoc', 'dsDanhMuc', 'dsKhachHang'));
 
         } catch (\Exception $e) {
             Log::error("Lỗi POS Controller: " . $e->getMessage());

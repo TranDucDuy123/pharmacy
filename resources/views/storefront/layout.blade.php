@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DYLY Pharma - Nhà thuốc trực tuyến</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/pos.js'])
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </head>
-<body class="bg-slate-50 font-sans antialiased text-slate-900 flex flex-col min-h-screen">
+<body x-data="storefrontApp()" class="bg-slate-50 font-sans antialiased text-slate-900 flex flex-col min-h-screen">
 
     <!-- HEADER -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
@@ -31,9 +31,9 @@
                 <!-- Menu Phải -->
                 <div class="flex items-center gap-4">
                     <!-- Nút Giỏ hàng -->
-                    <a href="#" class="relative p-2 text-slate-500 hover:text-blue-600 transition">
+                    <a href="#" @click.prevent="isCartOpen = true" class="relative p-2 text-slate-500 hover:text-blue-600 transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                        <span class="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold text-center leading-4">0</span>
+                        <span x-show="cart.length > 0" x-cloak x-text="cart.length" class="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold text-center leading-4">0</span>
                     </a>
 
                     <!-- Khu vực Đăng nhập / Khách hàng -->
@@ -114,5 +114,173 @@
             </div>
         </div>
     </footer>
+
+    <!-- KHUNG GIỎ HÀNG TRƯỢT TỪ BÊN PHẢI (SLIDE-OVER CART) -->
+    <div x-show="isCartOpen" style="display: none;" class="relative z-50" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        <div x-show="isCartOpen" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+        <div class="fixed inset-0 overflow-hidden">
+            <div class="absolute inset-0 overflow-hidden">
+                <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                    <div x-show="isCartOpen" 
+                         x-transition:enter="transform transition ease-in-out duration-300" 
+                         x-transition:enter-start="translate-x-full" 
+                         x-transition:enter-end="translate-x-0" 
+                         x-transition:leave="transform transition ease-in-out duration-300" 
+                         x-transition:leave-start="translate-x-0" 
+                         x-transition:leave-end="translate-x-full" 
+                         @click.away="isCartOpen = false"
+                         class="pointer-events-auto w-screen max-w-md flex flex-col bg-white shadow-2xl">
+                        
+                        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+                            <h2 class="text-lg font-black text-slate-800 uppercase tracking-widest">Giỏ Hàng Của Bạn</h2>
+                            <button @click="isCartOpen = false" class="p-2 text-slate-400 hover:text-slate-600 bg-white rounded-full shadow-sm">✕</button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-6">
+                            <template x-if="cart.length === 0">
+                                <p class="text-center text-slate-400 italic mt-10">Chưa có sản phẩm nào. Cùng mua sắm nhé!</p>
+                            </template>
+                            
+                            <div class="space-y-6">
+                                <template x-for="(item, index) in cart" :key="item.id">
+                                    <div class="flex gap-4 items-center border-b border-slate-50 pb-4">
+                                        <div class="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 shrink-0">
+                                            <img x-show="item.image" :src="'/' + item.image" class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h3 class="text-sm font-bold text-slate-800 line-clamp-1" x-text="item.name"></h3>
+                                            <p class="text-blue-600 font-black mt-1" x-text="formatPrice(item.price)"></p>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-2">
+                                            <button @click="removeFromCart(index)" class="text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition">XÓA</button>
+                                            <div class="flex items-center border border-slate-200 rounded-lg">
+                                                <button @click="item.quantity > 1 ? item.quantity-- : null" class="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-50">-</button>
+                                                <span class="w-6 text-center text-xs font-bold" x-text="item.quantity"></span>
+                                                <button @click="item.quantity < item.stock ? item.quantity++ : null" class="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-slate-50">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-200 px-6 py-6 bg-slate-50">
+                            <div class="flex justify-between text-base font-bold text-slate-900 mb-4">
+                                <p>TỔNG CỘNG</p>
+                                <p class="text-2xl text-blue-600" x-text="formatPrice(cartTotal)"></p>
+                            </div>
+                            <button @click="submitOrder()" 
+                                    :disabled="cart.length === 0 || isProcessing"
+                                    class="w-full rounded-2xl bg-blue-600 px-6 py-4 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all disabled:opacity-50 flex items-center justify-center gap-2 tracking-widest uppercase">
+                                <svg x-show="isProcessing" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="isProcessing ? 'Đang gửi đơn...' : 'Đặt hàng ngay'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC GIỎ HÀNG & ĐẶT HÀNG -->
+    <script>
+        function storefrontApp() {
+            return {
+                cart: [],
+                isCartOpen: false,
+                isProcessing: false,
+                
+                get headers() {
+                    return {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}' // Lấy trực tiếp từ Blade
+                    }
+                },
+
+                init() {
+                    let savedCart = localStorage.getItem('dyly_storefront_cart');
+                    if (savedCart) {
+                        this.cart = JSON.parse(savedCart);
+                    }
+                    this.$watch('cart', value => {
+                        localStorage.setItem('dyly_storefront_cart', JSON.stringify(value));
+                    });
+                },
+
+                addToCart(thuoc) {
+                    if (thuoc.stock <= 0) {
+                        alert('Sản phẩm này đã hết hàng!');
+                        return;
+                    }
+                    let existing = this.cart.find(i => i.id === thuoc.id);
+                    if (existing) {
+                        if (existing.quantity < thuoc.stock) {
+                            existing.quantity++;
+                            this.isCartOpen = true;
+                        } else {
+                            alert('Số lượng đạt mức tồn kho tối đa!');
+                        }
+                    } else {
+                        this.cart.push({ ...thuoc, quantity: 1 });
+                        this.isCartOpen = true;
+                    }
+                },
+
+                removeFromCart(index) {
+                    this.cart.splice(index, 1);
+                },
+
+                get cartTotal() {
+                    return this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                },
+
+                formatPrice(price) {
+                    return new Intl.NumberFormat('vi-VN').format(price || 0) + '₫';
+                },
+
+                async submitOrder() {
+                    let isAuth = {{ Auth::guard('customer')->check() ? 'true' : 'false' }};
+                    if (!isAuth) {
+                        alert("Vui lòng đăng nhập để tiếp tục đặt hàng.");
+                        window.location.href = "{{ route('customer.login') }}";
+                        return;
+                    }
+
+                    this.isProcessing = true;
+                    try {
+                        let response = await fetch("{{ route('storefront.checkout') }}", {
+                            method: 'POST',
+                            headers: this.headers,
+                            body: JSON.stringify({
+                                cart: this.cart,
+                                total_amount: this.cartTotal
+                            })
+                        });
+                        
+                        let data = await response.json();
+                        
+                        if (data.status === 'success') {
+                            alert('🎉 ' + data.message);
+                            this.cart = [];
+                            this.isCartOpen = false;
+                            window.location.reload(); // Tải lại trang để trừ số tồn kho trên giao diện
+                        } else if (response.status === 401) {
+                            window.location.href = "{{ route('customer.login') }}";
+                        } else {
+                            alert('❌ Lỗi: ' + data.message);
+                        }
+                    } catch (e) {
+                        alert('Lỗi kết nối đến máy chủ!');
+                    } finally {
+                        this.isProcessing = false;
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>
