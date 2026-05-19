@@ -121,7 +121,7 @@ class KhachHangController extends Controller
             $khachHang = KhachHang::findOrFail($id);
             
             // Kiểm tra xem khách đã mua hàng chưa
-            if (DB::table('orders')->where('khach_hang_id', $id)->exists()) {
+            if (DB::table('orders')->where('customer_id', $id)->exists()) {
                 return back()->with('loi_he_thong', 'Không thể xóa khách hàng đã có lịch sử mua hàng. Vui lòng chuyển trạng thái sang "Ngừng hoạt động".');
             }
 

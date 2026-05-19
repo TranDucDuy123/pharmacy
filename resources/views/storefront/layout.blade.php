@@ -184,9 +184,10 @@
             </div>
         </div>
     </div>
+    
 
     <!-- SCRIPT LOGIC GIỎ HÀNG & ĐẶT HÀNG -->
-    <script>
+    {{-- <script>
         function storefrontApp() {
             return {
                 cart: [],
@@ -275,6 +276,119 @@
                         }
                     } catch (e) {
                         alert('Lỗi kết nối đến máy chủ!');
+                    } finally {
+                        this.isProcessing = false;
+                    }
+                }
+            }
+        }
+    </script> --}}
+
+    <script>
+        function storefrontApp() {
+            return {
+                cart: [],
+                isCartOpen: false,
+                isProcessing: false,
+                
+                get headers() {
+                    return {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}' 
+                    }
+                },
+
+                init() {
+                    let savedCart = localStorage.getItem('dyly_storefront_cart');
+                    if (savedCart) {
+                        this.cart = JSON.parse(savedCart);
+                    }
+                    this.$watch('cart', value => {
+                        localStorage.setItem('dyly_storefront_cart', JSON.stringify(value));
+                    });
+                },
+
+                // 1. TỐI ƯU LẠI HÀM THÊM GIỎ HÀNG (Bao quát cả 2 trường hợp tên biến)
+                addToCart(thuoc) {
+                    let tonKho = thuoc.stock !== undefined ? thuoc.stock : thuoc.so_luong_ton;
+                    
+                    if (tonKho <= 0) {
+                        alert('Sản phẩm này đã hết hàng!');
+                        return;
+                    }
+                    let existing = this.cart.find(i => i.id === thuoc.id);
+                    if (existing) {
+                        if (existing.quantity < tonKho) {
+                            existing.quantity++;
+                            this.isCartOpen = true;
+                        } else {
+                            alert('Số lượng đạt mức tồn kho tối đa!');
+                        }
+                    } else {
+                        this.cart.push({ ...thuoc, quantity: 1 });
+                        this.isCartOpen = true;
+                    }
+                },
+
+                removeFromCart(index) {
+                    this.cart.splice(index, 1);
+                },
+
+                // 2. TỐI ƯU LẠI HÀM TÍNH TỔNG TIỀN
+                get cartTotal() {
+                    return this.cart.reduce((sum, item) => {
+                        let gia = item.price !== undefined ? item.price : item.gia_ban;
+                        return sum + (gia * item.quantity);
+                    }, 0);
+                },
+
+                formatPrice(price) {
+                    return new Intl.NumberFormat('vi-VN').format(price || 0) + '₫';
+                },
+
+                // 3. TỐI ƯU LẠI PAYLOAD VÀ XỬ LÝ LỖI ĐẶT HÀNG
+                async submitOrder() {
+                    let isAuth = {{ Auth::guard('customer')->check() ? 'true' : 'false' }};
+                    if (!isAuth) {
+                        alert("Vui lòng đăng nhập để tiếp tục đặt hàng.");
+                        window.location.href = "{{ route('customer.login') }}";
+                        return;
+                    }
+
+                    this.isProcessing = true;
+                    try {
+                        const cartPayload = this.cart.map(item => ({
+                            id: item.id,
+                            quantity: item.quantity,
+                            price: item.price !== undefined ? item.price : item.gia_ban
+                        }));
+
+                        let response = await fetch("{{ route('storefront.checkout') }}", {
+                            method: 'POST',
+                            headers: this.headers,
+                            body: JSON.stringify({
+                                cart: cartPayload, 
+                                total_amount: this.cartTotal
+                            })
+                        });
+                        
+                        let data = await response.json();
+                        
+                        if (response.ok && data.status === 'success') {
+                            alert('🎉 ' + data.message + '\nMã đơn hàng: #' + data.order_id);
+                            this.cart = []; 
+                            this.isCartOpen = false;
+                            window.location.reload(); 
+                        } else if (response.status === 401) {
+                            window.location.href = "{{ route('customer.login') }}";
+                        } else {
+                            let errorMsg = data.message || 'Có lỗi xảy ra.';
+                            if (data.errors) errorMsg = Object.values(data.errors).flat().join('\n');
+                            alert('❌ Lỗi đặt hàng: \n' + errorMsg);
+                        }
+                    } catch (e) {
+                        alert('Lỗi kết nối đến máy chủ! Vui lòng thử lại sau.');
                     } finally {
                         this.isProcessing = false;
                     }

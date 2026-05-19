@@ -63,6 +63,9 @@
         
         /* Hiệu ứng mượt cho Alpine */
         [x-cloak] { display: none !important; }
+
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <!-- Khởi tạo App AlpineJS tại thẻ body -->
@@ -135,7 +138,7 @@
                                {{ $dm }}
                             </a>
                         @endforeach
-                    </div>
+                    </div>  
 
                     <!-- Bảng lọc nâng cao (Alpine.js) -->
                     <div x-show="openFilter" x-cloak x-transition class="p-1 mt-2 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 shadow-inner">
@@ -178,7 +181,7 @@
                         <a href="{{ route('pos.index') }}" class="mt-2 text-blue-600 font-bold underline decoration-none">Hiển thị tất cả</a>
                     </div>
                 @else
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         @foreach($danhSachThuoc as $thuoc)
                         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition flex flex-col h-full group relative overflow-hidden">
                             <!-- Nhãn thuốc kê đơn -->
@@ -234,7 +237,7 @@
 
 
         <!-- KHU VỰC KHÁCH HÀNG (COMBO BOX) -->
-        <div class="p-4 border-b border-slate-100 bg-slate-50/50 relative z-40">
+        <div class="p-4e border-b border-slate-100 bg-slate-50/50 relative z-40">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Khách Hàng</h2>
                 <!-- Nút Thêm mới gọi hàm openCustomerModal() để tự động điền SĐT đang gõ dở -->
@@ -321,7 +324,7 @@
         </div>
 
         <!-- ASIDE GIỎ HÀNG -->
-        <aside class="bg-white flex flex-col shrink-0 relative z-20 shadow-2xl">
+        <aside class=" w-96 bg-white flex flex-col shrink-0 relative z-20 shadow-2xl">
             <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <h2 class="font-black text-slate-800 text-sm uppercase tracking-widest flex items-center gap-2">
                     Giỏ hàng 

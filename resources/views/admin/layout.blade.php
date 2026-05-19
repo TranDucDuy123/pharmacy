@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Admin - Dyly Pharma System')</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/pos.js'])
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Thêm CSS nhỏ để làm thanh cuộn gọn gàng giống màn hình POS -->
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

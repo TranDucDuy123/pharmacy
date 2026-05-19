@@ -70,7 +70,13 @@ Route::middleware(['auth'])->group(function () {
         
         //có kiểm soát không cho sửa đơn
         Route::resource('phieu-nhap', PhieuNhapController::class)
-    ->only(['index', 'create', 'store', 'show']);
+        ->only(['index', 'create', 'store', 'show']);
+
+        Route::patch('phieu-nhap/{phieuNhap}/complete', [PhieuNhapController::class, 'complete'])
+        ->name('phieu-nhap.complete');
+
+        Route::patch('phieu-nhap/{phieuNhap}/cancel', [PhieuNhapController::class, 'cancel'])
+        ->name('phieu-nhap.cancel');
         
         // Quản lý Kho Thuốc
         Route::resource('thuoc', AdminThuocController::class);
@@ -98,5 +104,6 @@ Route::middleware(['auth', CheckAdmin::class])->prefix('api/v1/admin')->group(fu
 
 // Bắt buộc khách hàng phải đăng nhập mới được gọi API này
 Route::middleware(['auth:customer'])->group(function () {
-    Route::post('/storefront/checkout', [StorefrontController::class, 'checkout'])->name('storefront.checkout');
+    // ĐỔI StorefrontController THÀNH ApiPosController
+    Route::post('/storefront/checkout', [ApiPosController::class, 'checkout'])->name('storefront.checkout');
 });

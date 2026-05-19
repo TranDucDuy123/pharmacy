@@ -297,6 +297,7 @@ window.posApp = function() {
         },
 
         selectCustomer(customer) {
+            console.log(customer);
             this.selectedCustomer = customer;
             this.customerSearch = '';
             this.customerSearchResults = [];
@@ -414,6 +415,8 @@ window.posApp = function() {
 
             this.isProcessing = true;
             try {
+                console.log(this.selectedCustomer)
+
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 const response = await fetch('/api/v1/pos/checkout', {
                     method: 'POST',
@@ -425,10 +428,10 @@ window.posApp = function() {
                     body: JSON.stringify({
                         cart: this.cart,
                         total_amount: this.totalAmount,
-                        customer_id: this.selectedCustomer ? this.selectedCustomer.id : null // Gắn Khách hàng vào Payload
+                        customer_id: this.selectedCustomer ? this.selectedCustomer.id : nullnull
                     })
+                    
                 });
-
                 const result = await response.json();
 
                 if (response.ok && result.status === 'success') {
